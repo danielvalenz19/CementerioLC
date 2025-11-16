@@ -37,8 +37,9 @@ async function listar({ manzanaId, estado, q, page, pageSize }) {
     }
   }
 
-  sql += " ORDER BY m.nombre, n.numero LIMIT ? OFFSET ?";
-  params.push(pageSize, (page - 1) * pageSize);
+  const limit = pageSize;
+  const offset = (page - 1) * pageSize;
+  sql += ` ORDER BY m.nombre, n.numero LIMIT ${limit} OFFSET ${offset}`;
 
   const [rows] = await pool.execute(sql, params);
   return rows;
