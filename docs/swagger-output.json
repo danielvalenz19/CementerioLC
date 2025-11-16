@@ -1,0 +1,3271 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Cementerio Nichos API",
+    "version": "1.0.0",
+    "description": "Módulo de autenticación (login, refresh, logout, me)"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Autenticación y tokens"
+    },
+    {
+      "name": "Manzanas",
+      "description": "Gestión de manzanas del cementerio"
+    },
+    {
+      "name": "Nichos",
+      "description": "Gestión y estado de nichos"
+    },
+    {
+      "name": "Propietarios",
+      "description": "Administración de propietarios"
+    },
+    {
+      "name": "Solicitudes",
+      "description": "Solicitudes de compra de nichos"
+    },
+    {
+      "name": "Arrendamientos",
+      "description": "Arrendamientos de nichos"
+    },
+    {
+      "name": "Traspasos",
+      "description": "Traspasos de nichos"
+    },
+    {
+      "name": "Recibos",
+      "description": "Gestión de recibos"
+    },
+    {
+      "name": "Alertas",
+      "description": "Alertas y recordatorios"
+    },
+    {
+      "name": "Catálogos",
+      "description": "Catálogos estáticos"
+    },
+    {
+      "name": "Tarifas",
+      "description": "Tarifario vigente"
+    },
+    {
+      "name": "Reportes",
+      "description": "Reportes operativos"
+    },
+    {
+      "name": "Auditoría",
+      "description": "Registro de auditoría"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "Autentica por correo + password.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Credenciales inválidas"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "example": {
+                "correo": "admin@demo.com",
+                "password": "Secreta123"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh token",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              },
+              "example": {
+                "refresh_token": "<refresh_token>"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequest"
+              },
+              "examples": {
+                "soloEste": {
+                  "value": {
+                    "refresh_token": "<refresh_token>"
+                  }
+                },
+                "todosMisDispositivos": {
+                  "value": {
+                    "allDevices": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Usuario autenticado",
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/manzanas/": {
+      "get": {
+        "tags": [
+          "Manzanas"
+        ],
+        "summary": "Listar manzanas",
+        "description": "",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Filtro por nombre (LIKE)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de manzanas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "nombre": {
+                        "type": "string",
+                        "example": "A"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Manzanas"
+        ],
+        "summary": "Crear manzana",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 3
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "C"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "C"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/manzanas/{id}": {
+      "get": {
+        "tags": [
+          "Manzanas"
+        ],
+        "summary": "Obtener manzana por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "integer"
+                },
+                "minimum": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Manzana encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "A"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "No encontrada"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Manzanas"
+        ],
+        "summary": "Actualizar manzana",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "integer"
+                },
+                "minimum": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Actualizada (sin contenido)"
+          },
+          "400": {
+            "description": "Error de validación"
+          },
+          "404": {
+            "description": "Manzana no encontrada"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "B"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Manzanas"
+        ],
+        "summary": "Eliminar manzana",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "integer"
+                },
+                "minimum": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Eliminada"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Manzana no encontrada"
+          }
+        }
+      }
+    },
+    "/api/nichos/": {
+      "get": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Listar nichos",
+        "description": "Filtros por manzanaId, estado y q; incluye paginación básica.",
+        "parameters": [
+          {
+            "name": "manzanaId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "enum": [
+              "Disponible",
+              "Reservado",
+              "Ocupado"
+            ],
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "default": 1,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "default": 20,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Crear nicho",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "numero",
+                  "manzana_id"
+                ],
+                "properties": {
+                  "numero": {
+                    "type": "integer",
+                    "example": 10
+                  },
+                  "manzana_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "Disponible",
+                      "Reservado",
+                      "Ocupado"
+                    ],
+                    "example": "Disponible"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nichos/por-numero": {
+      "get": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Buscar nicho por número + manzana (id o nombre)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "numero",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "manzana_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "manzana",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/nichos/por-manzana/{manzanaId}": {
+      "get": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Listar nichos por manzana",
+        "description": "",
+        "parameters": [
+          {
+            "name": "manzanaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "minimum": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/nichos/disponibles": {
+      "get": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Listar nichos disponibles",
+        "description": "",
+        "parameters": [
+          {
+            "name": "manzanaId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/nichos/{id}": {
+      "get": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Obtener nicho por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "minimum": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Actualizar nicho por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "minimum": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "numero": {
+                    "type": "integer",
+                    "example": 11
+                  },
+                  "manzana_id": {
+                    "type": "integer",
+                    "example": 2
+                  },
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "Disponible",
+                      "Reservado",
+                      "Ocupado"
+                    ],
+                    "example": "Reservado"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Eliminar nicho por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "minimum": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/nichos/{id}/estado": {
+      "patch": {
+        "tags": [
+          "Nichos"
+        ],
+        "summary": "Cambiar estado de un nicho",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nuevo_estado"
+                ],
+                "properties": {
+                  "nuevo_estado": {
+                    "type": "string",
+                    "enum": [
+                      "Disponible",
+                      "Reservado",
+                      "Ocupado"
+                    ],
+                    "example": "Reservado"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/propietarios/": {
+      "get": {
+        "tags": [
+          "Propietarios"
+        ],
+        "summary": "Listar propietarios",
+        "description": "",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Búsqueda por nombre, apellido, dpi, teléfono",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Propietarios"
+        ],
+        "summary": "Crear propietario",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombres",
+                  "apellidos"
+                ],
+                "properties": {
+                  "nombres": {
+                    "type": "string",
+                    "example": "Juan"
+                  },
+                  "apellidos": {
+                    "type": "string",
+                    "example": "Pérez"
+                  },
+                  "dpi": {
+                    "type": "string",
+                    "example": "1234567890101"
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "example": "55667788"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/propietarios/{id}": {
+      "get": {
+        "tags": [
+          "Propietarios"
+        ],
+        "summary": "Obtener propietario por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Propietarios"
+        ],
+        "summary": "Actualizar propietario",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Propietarios"
+        ],
+        "summary": "Eliminar propietario",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/solicitudes/": {
+      "get": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Listar solicitudes de compra",
+        "description": "",
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "enum": {
+                  "type": "array",
+                  "example": [
+                    "Pendiente",
+                    "Aprobada",
+                    "Rechazada"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "propietario_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "nicho_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Crear solicitud de compra de nicho",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "propietario_id",
+                  "nicho_id"
+                ],
+                "properties": {
+                  "propietario_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "nicho_id": {
+                    "type": "integer",
+                    "example": 10
+                  },
+                  "fecha_solicitud": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2025-11-16",
+                    "description": "Opcional, si se omite usa la fecha actual del servidor"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/solicitudes/{id}": {
+      "get": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Obtener detalle de solicitud",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "integer"
+                },
+                "minimum": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/solicitudes/{id}/aprobar": {
+      "post": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Aprobar solicitud de compra",
+        "description": "Solo se pueden aprobar solicitudes en estado Pendiente.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "integer"
+                },
+                "minimum": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recibo_id": {
+                    "type": "integer",
+                    "example": 5,
+                    "description": "Opcional, si se envía se asocia el recibo a la solicitud"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/solicitudes/{id}/rechazar": {
+      "post": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Rechazar solicitud de compra",
+        "description": "Solo se pueden rechazar solicitudes en estado Pendiente.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "integer"
+                },
+                "minimum": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/arrendamientos/": {
+      "get": {
+        "tags": [
+          "Arrendamientos"
+        ],
+        "summary": "Listar arrendamientos",
+        "description": "",
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "enum": {
+                  "type": "array",
+                  "example": [
+                    "Vigente",
+                    "Vencido"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "propietario_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "nicho_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Arrendamientos"
+        ],
+        "summary": "Crear arrendamiento",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "propietario_id",
+                  "nicho_id",
+                  "fecha_inicio"
+                ],
+                "properties": {
+                  "propietario_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "nicho_id": {
+                    "type": "integer",
+                    "example": 10
+                  },
+                  "recibo_id": {
+                    "type": "integer",
+                    "example": 5
+                  },
+                  "fecha_inicio": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2025-11-01"
+                  },
+                  "fecha_fin": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-11-01"
+                  },
+                  "nombre_difunto": {
+                    "type": "string",
+                    "example": "Juan Pérez"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/arrendamientos/{id}": {
+      "get": {
+        "tags": [
+          "Arrendamientos"
+        ],
+        "summary": "Obtener arrendamiento por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/arrendamientos/{id}/renovar": {
+      "post": {
+        "tags": [
+          "Arrendamientos"
+        ],
+        "summary": "Renovar arrendamiento (actualizar fecha_fin)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "integer"
+                },
+                "minimum": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nueva_fecha_fin"
+                ],
+                "properties": {
+                  "nueva_fecha_fin": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2027-11-01"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/arrendamientos/{id}/cancelar": {
+      "post": {
+        "tags": [
+          "Arrendamientos"
+        ],
+        "summary": "Cancelar arrendamiento (poner fecha_fin = hoy y liberar nicho)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "integer"
+                },
+                "minimum": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/traspasos/": {
+      "get": {
+        "tags": [
+          "Traspasos"
+        ],
+        "summary": "Listar traspasos",
+        "description": "",
+        "parameters": [
+          {
+            "name": "propietario_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nicho_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Traspasos"
+        ],
+        "summary": "Crear traspaso",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "propietario_anterior_id": {
+                    "example": "any"
+                  },
+                  "nuevo_propietario_id": {
+                    "example": "any"
+                  },
+                  "nicho_id": {
+                    "example": "any"
+                  },
+                  "recibo_id": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traspasos/{id}": {
+      "get": {
+        "tags": [
+          "Traspasos"
+        ],
+        "summary": "Obtener traspaso por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/recibos/": {
+      "get": {
+        "tags": [
+          "Recibos"
+        ],
+        "summary": "Listar recibos",
+        "description": "",
+        "parameters": [
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Recibos"
+        ],
+        "summary": "Crear recibo",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "monto": {
+                    "example": "any"
+                  },
+                  "fecha_pago": {
+                    "example": "any"
+                  },
+                  "numero_recibo": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recibos/{id}": {
+      "get": {
+        "tags": [
+          "Recibos"
+        ],
+        "summary": "Obtener recibo por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/alertas/vencimientos": {
+      "get": {
+        "tags": [
+          "Alertas"
+        ],
+        "summary": "Alertas de arrendamientos próximos a vencer",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/catalogos/": {
+      "get": {
+        "tags": [
+          "Catálogos"
+        ],
+        "summary": "Obtener catálogos",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/tarifas/": {
+      "get": {
+        "tags": [
+          "Tarifas"
+        ],
+        "summary": "Listar tarifas",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tarifas"
+        ],
+        "summary": "Crear tarifa",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/tarifas/{id}": {
+      "put": {
+        "tags": [
+          "Tarifas"
+        ],
+        "summary": "Actualizar tarifa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/reportes/ocupacion": {
+      "get": {
+        "tags": [
+          "Reportes"
+        ],
+        "summary": "Reporte de ocupación de nichos",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/reportes/arrendamientos": {
+      "get": {
+        "tags": [
+          "Reportes"
+        ],
+        "summary": "Reporte de arrendamientos",
+        "description": "",
+        "parameters": [
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/reportes/cartera": {
+      "get": {
+        "tags": [
+          "Reportes"
+        ],
+        "summary": "Reporte de cartera (arrendamientos en mora)",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/auditoria/": {
+      "get": {
+        "tags": [
+          "Auditoría"
+        ],
+        "summary": "Listar auditoría",
+        "description": "",
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "correo": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "example": {
+                    "type": "string",
+                    "example": "admin@demo.com"
+                  }
+                }
+              },
+              "password": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "example": {
+                    "type": "string",
+                    "example": "Secreta123"
+                  }
+                }
+              }
+            }
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "correo",
+              "password"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "token_type": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "example": {
+                    "type": "string",
+                    "example": "Bearer"
+                  }
+                }
+              },
+              "access_token": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "expires_in": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "example": {
+                    "type": "number",
+                    "example": 900
+                  }
+                }
+              },
+              "refresh_token": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "user": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "object"
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "integer"
+                          }
+                        }
+                      },
+                      "nombre_completo": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      },
+                      "correo": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      },
+                      "rol_id": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "integer"
+                          }
+                        }
+                      },
+                      "rol": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "refresh_token": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "refresh_token"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RefreshResponse": {
+        "$ref": "#/components/schemas/LoginResponse"
+      },
+      "LogoutRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "refresh_token": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "allDevices": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "boolean"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "MeUser": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "nombre_completo": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "correo": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "rol_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "rol": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "activo": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Manzana": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "example": {
+                    "type": "number",
+                    "example": 1
+                  }
+                }
+              },
+              "nombre": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "example": {
+                    "type": "string",
+                    "example": "A"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ManzanaList": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "array"
+          },
+          "items": {
+            "$ref": "#/components/schemas/Manzana"
+          }
+        }
+      },
+      "Nicho": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "numero": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "estado": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "enum": {
+                    "type": "array",
+                    "example": [
+                      "Disponible",
+                      "Reservado",
+                      "Ocupado"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "manzana_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "manzana": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Propietario": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "nombres": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "apellidos": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "dpi": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "telefono": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SolicitudCompra": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "propietario_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "nombres": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "apellidos": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "nicho_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "numero_nicho": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "manzana_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "recibo_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "numero_recibo": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "recibo_monto": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "number"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "recibo_fecha_pago": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "estado": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "enum": {
+                    "type": "array",
+                    "example": [
+                      "Pendiente",
+                      "Aprobada",
+                      "Rechazada"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "fecha_solicitud": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Arrendamiento": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "propietario_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "nombres": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "apellidos": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "nicho_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "numero_nicho": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "manzana_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "recibo_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "numero_recibo": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "recibo_monto": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "number"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "recibo_fecha_pago": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "fecha_inicio": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  }
+                }
+              },
+              "fecha_fin": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "nombre_difunto": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "estado_virtual": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "enum": {
+                    "type": "array",
+                    "example": [
+                      "Vigente",
+                      "Vencido"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Traspaso": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "propietario_anterior_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "anterior_nombres": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "anterior_apellidos": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "nuevo_propietario_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "nuevo_nombres": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "nuevo_apellidos": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "nicho_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "numero_nicho": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "manzana_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "recibo_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "numero_recibo": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "recibo_monto": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "number"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "fecha_traspaso": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Recibo": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "monto": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "number"
+                  }
+                }
+              },
+              "fecha_pago": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  }
+                }
+              },
+              "numero_recibo": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AlertaVencimiento": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "arrendamiento_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "nombres": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "apellidos": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "numero_nicho": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "manzana_id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "fecha_fin": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  }
+                }
+              },
+              "dias_restantes": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Tarifa": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "concepto": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "alcance": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "monto": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "number"
+                  }
+                }
+              },
+              "moneda": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "vigencia_desde": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  }
+                }
+              },
+              "vigencia_hasta": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
