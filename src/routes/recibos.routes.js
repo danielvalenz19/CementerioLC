@@ -18,6 +18,14 @@ router.get("/:id", (req, res, next) => {
   return ctrl.obtenerPorId(req, res, next);
 });
 
+router.get("/:id/pdf", (req, res, next) => {
+  /*
+    #swagger.tags = ['Recibos']
+    #swagger.summary = 'Descargar recibo en PDF'
+  */
+  return ctrl.descargarPdf(req, res, next);
+});
+
 router.post("/", (req, res, next) => {
   /*
     #swagger.tags = ['Recibos']

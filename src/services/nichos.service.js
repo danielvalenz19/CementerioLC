@@ -4,15 +4,37 @@ const ESTADOS_VALIDOS = ["Disponible", "Reservado", "Ocupado"];
 
 async function listar({ manzanaId, estado, q, page, pageSize }) {
   const params = [];
+  // CORRECCIÓN: Agregamos LEFT JOIN a arrendamientos y propietarios
+  // Filtramos el arrendamiento para que sea el "Vigente" (fecha_fin NULL o futura)
   let sql = `
     SELECT
       n.id,
       n.numero,
       n.estado,
       n.manzana_id,
-      m.nombre AS manzana
+      m.nombre AS manzana,
+      
+      -- Datos del Arrendamiento Vigente
+      a.id AS arrendamiento_id,
+      a.fecha_inicio,
+      a.fecha_fin,
+      a.nombre_difunto,
+      
+      -- Datos del Propietario
+      p.id AS propietario_id,
+      p.nombres,
+      p.apellidos,
+      p.telefono
+      
     FROM nichos n
     JOIN manzanas m ON m.id = n.manzana_id
+    
+    -- Buscamos solo el arrendamiento ACTIVO (si existe)
+    LEFT JOIN arrendamientos a ON a.nicho_id = n.id 
+         AND (a.fecha_fin IS NULL OR a.fecha_fin >= CURDATE())
+         
+    LEFT JOIN propietarios p ON p.id = a.propietario_id
+    
     WHERE 1=1
   `;
 
@@ -32,8 +54,15 @@ async function listar({ manzanaId, estado, q, page, pageSize }) {
       sql += " AND n.numero = ?";
       params.push(n);
     } else {
-      sql += " AND m.nombre LIKE ?";
-      params.push(`%${q}%`);
+      // Búsqueda extendida: ahora permite buscar por nombre de propietario o difunto también
+      sql += ` AND (
+        m.nombre LIKE ? OR 
+        p.nombres LIKE ? OR 
+        p.apellidos LIKE ? OR 
+        a.nombre_difunto LIKE ?
+      )`;
+      const likeQ = `%${q}%`;
+      params.push(likeQ, likeQ, likeQ, likeQ);
     }
   }
 
@@ -44,6 +73,7 @@ async function listar({ manzanaId, estado, q, page, pageSize }) {
   const [rows] = await pool.execute(sql, params);
   return rows;
 }
+
 
 async function obtenerPorId(id) {
   const [rows] = await pool.execute(
