@@ -29,6 +29,7 @@ const catalogosRouter = require("./src/routes/catalogos.routes");
 const tarifasRouter = require("./src/routes/tarifas.routes");
 const reportesRouter = require("./src/routes/reportes.routes");
 const auditoriaRouter = require("./src/routes/auditoria.routes");
+const usuariosRouter = require("./src/routes/usuarios.routes");
 
 app.get("/health", async (req, res) => {
   try {
@@ -53,6 +54,7 @@ app.use("/api/catalogos", catalogosRouter);
 app.use("/api/tarifas", tarifasRouter);
 app.use("/api/reportes", reportesRouter);
 app.use("/api/auditoria", auditoriaRouter);
+app.use("/api/usuarios", usuariosRouter);
 
 const PORT = process.env.PORT || 3001;
 
