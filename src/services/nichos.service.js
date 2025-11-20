@@ -4,58 +4,35 @@ const ESTADOS_VALIDOS = ["Disponible", "Reservado", "Ocupado"];
 
 async function listar({ manzanaId, estado, q, page, pageSize }) {
   const params = [];
-  // CORRECCIÓN: Agregamos LEFT JOIN a arrendamientos y propietarios
-  // Filtramos el arrendamiento para que sea el "Vigente" (fecha_fin NULL o futura)
-  let sql = `
-    SELECT
-      n.id,
-      n.numero,
-      n.estado,
-      n.manzana_id,
-      m.nombre AS manzana,
-      
-      -- Datos del Arrendamiento Vigente
-      a.id AS arrendamiento_id,
-      a.fecha_inicio,
-      a.fecha_fin,
-      a.nombre_difunto,
-      
-      -- Datos del Propietario
-      p.id AS propietario_id,
-      p.nombres,
-      p.apellidos,
-      p.telefono
-      
-    FROM nichos n
+  
+  // 1. Armamos los filtros (WHERE)
+  let whereClause = " WHERE 1=1";
+
+  // JOINs necesarios para filtrar por texto (q) si es necesario
+  let joins = `
     JOIN manzanas m ON m.id = n.manzana_id
-    
-    -- Buscamos solo el arrendamiento ACTIVO (si existe)
-    LEFT JOIN arrendamientos a ON a.nicho_id = n.id 
-         AND (a.fecha_fin IS NULL OR a.fecha_fin >= CURDATE())
-         
+    LEFT JOIN arrendamientos a ON a.nicho_id = n.id AND (a.fecha_fin IS NULL OR a.fecha_fin >= CURDATE())
     LEFT JOIN propietarios p ON p.id = a.propietario_id
-    
-    WHERE 1=1
   `;
 
   if (manzanaId) {
-    sql += " AND n.manzana_id = ?";
+    whereClause += " AND n.manzana_id = ?";
     params.push(manzanaId);
   }
 
   if (estado) {
-    sql += " AND n.estado = ?";
+    whereClause += " AND n.estado = ?";
     params.push(estado);
   }
 
   if (q) {
     const n = Number(q);
     if (Number.isInteger(n)) {
-      sql += " AND n.numero = ?";
+      whereClause += " AND n.numero = ?";
       params.push(n);
     } else {
-      // Búsqueda extendida: ahora permite buscar por nombre de propietario o difunto también
-      sql += ` AND (
+      // Búsqueda por texto
+      whereClause += ` AND (
         m.nombre LIKE ? OR 
         p.nombres LIKE ? OR 
         p.apellidos LIKE ? OR 
@@ -66,12 +43,43 @@ async function listar({ manzanaId, estado, q, page, pageSize }) {
     }
   }
 
+  // 2. CONSULTA 1: CONTAR EL TOTAL REAL (Sin LIMIT)
+  // Clonamos params porque la ejecución consume el array en algunas versiones de drivers, 
+  // pero en mysql2 suele estar bien. Por seguridad usamos el mismo array.
+  const sqlCount = `SELECT COUNT(*) as total FROM nichos n ${joins} ${whereClause}`;
+  const [rowsCount] = await pool.execute(sqlCount, params);
+  const totalReal = rowsCount[0].total;
+
+  // 3. CONSULTA 2: TRAER LOS DATOS (Con LIMIT)
   const limit = pageSize;
   const offset = (page - 1) * pageSize;
-  sql += ` ORDER BY m.nombre, n.numero LIMIT ${limit} OFFSET ${offset}`;
+  
+  const sqlData = `
+    SELECT
+      n.id,
+      n.numero,
+      n.estado,
+      n.manzana_id,
+      m.nombre AS manzana,
+      a.id AS arrendamiento_id,
+      a.fecha_inicio,
+      a.fecha_fin,
+      a.nombre_difunto,
+      p.id AS propietario_id,
+      p.nombres,
+      p.apellidos,
+      p.telefono
+    FROM nichos n
+    ${joins}
+    ${whereClause}
+    ORDER BY m.nombre, n.numero
+    LIMIT ${limit} OFFSET ${offset}
+  `;
 
-  const [rows] = await pool.execute(sql, params);
-  return rows;
+  const [rows] = await pool.execute(sqlData, params);
+
+  // Devolvemos el array de 20 filas Y el número total real (ej. 579)
+  return { data: rows, total: totalReal };
 }
 
 

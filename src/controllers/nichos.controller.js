@@ -23,12 +23,12 @@ exports.listar = async (req, res) => {
       });
     }
 
-    const data = await service.listar({ manzanaId, estado, q, page, pageSize });
+    const result = await service.listar({ manzanaId, estado, q, page, pageSize });
     return res.json({
       page,
       pageSize,
-      count: data.length,
-      data,
+      count: result.total,
+      data: result.data,
     });
   } catch (err) {
     return res.status(500).json({ message: "Error al listar nichos", error: err.message });
@@ -212,7 +212,7 @@ exports.listarPorManzana = async (req, res) => {
 
     const page = 1;
     const pageSize = 5000;
-    const data = await service.listar({
+    const result = await service.listar({
       manzanaId,
       estado: null,
       q: null,
@@ -222,8 +222,8 @@ exports.listarPorManzana = async (req, res) => {
 
     return res.json({
       manzanaId,
-      count: data.length,
-      data,
+      count: result.total,
+      data: result.data,
     });
   } catch (err) {
     return res
@@ -241,7 +241,7 @@ exports.listarDisponibles = async (req, res) => {
 
     const page = 1;
     const pageSize = 5000;
-    const data = await service.listar({
+    const result = await service.listar({
       manzanaId,
       estado: "Disponible",
       q: null,
@@ -251,8 +251,8 @@ exports.listarDisponibles = async (req, res) => {
 
     return res.json({
       manzanaId,
-      count: data.length,
-      data,
+      count: result.total,
+      data: result.data,
     });
   } catch (err) {
     return res
