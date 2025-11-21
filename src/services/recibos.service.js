@@ -3,43 +3,37 @@ const { pool } = require("../config/db");
 async function listar({ desde, hasta, search }) {
   const params = [];
   
-  // LÓGICA MEJORADA: Hacemos JOIN inverso para saber de qué es el recibo
   let sql = `
     SELECT
       r.id,
       r.monto,
       r.fecha_pago,
       r.numero_recibo,
-      
-      -- Intentamos encontrar quién está asociado a este recibo
+      r.propietario_id,
       COALESCE(
+        CONCAT(p_directo.nombres, ' ', p_directo.apellidos), 
         CONCAT(p_arr.nombres, ' ', p_arr.apellidos),
         CONCAT(p_sol.nombres, ' ', p_sol.apellidos),
         CONCAT(p_tras_nuevo.nombres, ' ', p_tras_nuevo.apellidos),
         'Desconocido / Sin asignar'
       ) AS propietario_nombre,
-
-      -- Determinamos el concepto según la tabla donde se encuentre
       CASE
         WHEN a.id IS NOT NULL THEN CONCAT('Arrendamiento - Nicho ', IFNULL(n_arr.numero, '?'))
         WHEN s.id IS NOT NULL THEN CONCAT('Solicitud Compra - Nicho ', IFNULL(n_sol.numero, '?'))
         WHEN t.id IS NOT NULL THEN 'Traspaso de Título'
+        WHEN r.propietario_id IS NOT NULL THEN 'Pago Directo / Anticipo'
         ELSE 'Pago General'
       END AS concepto
 
     FROM recibos r
     
-    -- Buscamos en Arrendamientos
+    LEFT JOIN propietarios p_directo ON r.propietario_id = p_directo.id
     LEFT JOIN arrendamientos a ON a.recibo_id = r.id
     LEFT JOIN propietarios p_arr ON a.propietario_id = p_arr.id
     LEFT JOIN nichos n_arr ON a.nicho_id = n_arr.id
-
-    -- Buscamos en Solicitudes
     LEFT JOIN solicitudes_compra s ON s.recibo_id = r.id
     LEFT JOIN propietarios p_sol ON s.propietario_id = p_sol.id
     LEFT JOIN nichos n_sol ON s.nicho_id = n_sol.id
-
-    -- Buscamos en Traspasos
     LEFT JOIN traspasos t ON t.recibo_id = r.id
     LEFT JOIN propietarios p_tras_nuevo ON t.nuevo_propietario_id = p_tras_nuevo.id
 
@@ -73,13 +67,13 @@ async function obtenerPorId(id) {
   return rows[0];
 }
 
-async function crear({ monto, fecha_pago, numero_recibo }) {
+async function crear({ monto, fecha_pago, numero_recibo, propietario_id }) {
+  const propId = propietario_id ? Number(propietario_id) : null;
   const [result] = await pool.execute(
-    `INSERT INTO recibos (monto, fecha_pago, numero_recibo) VALUES (?, ?, ?)`,
-    [monto, fecha_pago, numero_recibo]
+    `INSERT INTO recibos (monto, fecha_pago, numero_recibo, propietario_id) VALUES (?, ?, ?, ?)`,
+    [monto, fecha_pago, numero_recibo, propId]
   );
-  // Retornamos el ID para que el frontend pueda usarlo
-  return { id: result.insertId, monto, fecha_pago, numero_recibo };
+  return { id: result.insertId, monto, fecha_pago, numero_recibo, propietario_id: propId };
 }
 
 module.exports = { listar, obtenerPorId, crear };

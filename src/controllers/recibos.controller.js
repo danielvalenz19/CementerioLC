@@ -36,13 +36,13 @@ exports.obtenerPorId = async (req, res) => {
 
 exports.crear = async (req, res) => {
   try {
-    const { monto, fecha_pago, numero_recibo } = req.body || {};
+    const { monto, fecha_pago, numero_recibo, propietario_id } = req.body || {};
 
     if (!monto || !fecha_pago || !numero_recibo) {
       return res.status(400).json({ message: "monto, fecha_pago y numero_recibo son obligatorios" });
     }
 
-    const nuevo = await service.crear({ monto, fecha_pago, numero_recibo });
+    const nuevo = await service.crear({ monto, fecha_pago, numero_recibo, propietario_id });
     return res.status(201).json(nuevo);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -57,12 +57,12 @@ exports.descargarPdf = async (req, res) => {
   try {
     const id = req.params.id;
 
-    // 1. Buscamos los datos completos del recibo (copia similar a la lógica de listar pero para uno solo)
     const [rows] = await pool.execute(
       `
       SELECT 
         r.*, 
         COALESCE(
+          CONCAT(p_directo.nombres, ' ', p_directo.apellidos),
           CONCAT(p_arr.nombres, ' ', p_arr.apellidos),
           CONCAT(p_sol.nombres, ' ', p_sol.apellidos),
           CONCAT(p_tras.nombres, ' ', p_tras.apellidos),
@@ -72,9 +72,11 @@ exports.descargarPdf = async (req, res) => {
           WHEN a.id IS NOT NULL THEN CONCAT('Arrendamiento Nicho ', IFNULL(n_arr.numero, '?'))
           WHEN s.id IS NOT NULL THEN CONCAT('Compra Nicho ', IFNULL(n_sol.numero, '?'))
           WHEN t.id IS NOT NULL THEN 'Traspaso de Título'
+          WHEN r.propietario_id IS NOT NULL THEN 'Pago Directo / Anticipo'
           ELSE 'Pago General'
         END AS concepto
       FROM recibos r
+      LEFT JOIN propietarios p_directo ON r.propietario_id = p_directo.id
       LEFT JOIN arrendamientos a ON a.recibo_id = r.id
       LEFT JOIN propietarios p_arr ON a.propietario_id = p_arr.id
       LEFT JOIN nichos n_arr ON a.nicho_id = n_arr.id
@@ -94,7 +96,6 @@ exports.descargarPdf = async (req, res) => {
 
     const recibo = rows[0];
 
-    // Formateamos la fecha y el monto para mostrar
     const fechaPago = new Date(recibo.fecha_pago).toLocaleDateString('es-GT', {
       year: 'numeric',
       month: 'long',
@@ -102,45 +103,22 @@ exports.descargarPdf = async (req, res) => {
     });
     const montoFormateado = `Q ${Number(recibo.monto).toFixed(2)}`;
 
-    // 2. Crear el documento PDF con un layout más profesional
     const doc = new PDFDocument({
       size: 'A4',
       margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
 
-    // Configurar headers para que el navegador sepa que es un PDF
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=recibo-${recibo.numero_recibo}.pdf`);
-
-    doc.pipe(res); // Enviamos el PDF directo a la respuesta
-
-    // --- DISEÑO MEJORADO DEL RECIBO ---
+    doc.pipe(res);
 
     doc.fillColor('#333333').font('Helvetica');
 
-    // Encabezado principal
-    doc
-      .fontSize(24)
-      .font('Helvetica-Bold')
-      .text('CEMENTERIO MUNICIPAL', { align: 'center' })
-      .moveDown(0.5);
+    doc.fontSize(24).font('Helvetica-Bold').text('CEMENTERIO MUNICIPAL', { align: 'center' }).moveDown(0.5);
+    doc.fontSize(16).font('Helvetica').text('COMPROBANTE DE PAGO', { align: 'center' }).moveDown(1.5);
 
-    doc
-      .fontSize(16)
-      .font('Helvetica')
-      .text('COMPROBANTE DE PAGO', { align: 'center' })
-      .moveDown(1.5);
+    doc.strokeColor('#cccccc').lineWidth(1).moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke().moveDown(1);
 
-    // Línea divisoria
-    doc
-      .strokeColor('#cccccc')
-      .lineWidth(1)
-      .moveTo(50, doc.y)
-      .lineTo(doc.page.width - 50, doc.y)
-      .stroke()
-      .moveDown(1);
-
-    // Información del recibo
     doc.fontSize(12).font('Helvetica');
     const infoY = doc.y;
     doc.text('Recibo No.:', 50, infoY);
@@ -151,15 +129,8 @@ exports.descargarPdf = async (req, res) => {
     doc.font('Helvetica-Bold').text(`${fechaPago}`, 150, fechaY);
     doc.moveDown(2);
 
-    doc
-      .strokeColor('#cccccc')
-      .lineWidth(0.5)
-      .moveTo(50, doc.y)
-      .lineTo(doc.page.width - 50, doc.y)
-      .stroke()
-      .moveDown(1.5);
+    doc.strokeColor('#cccccc').lineWidth(0.5).moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke().moveDown(1.5);
 
-    // Detalles principales
     doc.fontSize(14).font('Helvetica');
     const detailsY = doc.y;
 
@@ -176,15 +147,7 @@ exports.descargarPdf = async (req, res) => {
     doc.font('Helvetica-Bold').text(`${recibo.concepto}`, 200, conceptY);
     doc.moveDown(2);
 
-    // Pie de página / notas
-    doc
-      .strokeColor('#cccccc')
-      .lineWidth(0.5)
-      .moveTo(50, doc.y)
-      .lineTo(doc.page.width - 50, doc.y)
-      .stroke()
-      .moveDown(1);
-
+    doc.strokeColor('#cccccc').lineWidth(0.5).moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke().moveDown(1);
     doc
       .fontSize(10)
       .font('Helvetica-Oblique')
@@ -196,12 +159,8 @@ exports.descargarPdf = async (req, res) => {
       )
       .moveDown(2);
 
-    // Espacio para firmas
     const lineY = doc.page.height - 120;
-    doc
-      .moveTo(120, lineY)
-      .lineTo(320, lineY)
-      .stroke();
+    doc.moveTo(120, lineY).lineTo(320, lineY).stroke();
     doc.text('Firma Autorizada', 170, lineY + 10);
 
     doc.end();
@@ -210,4 +169,3 @@ exports.descargarPdf = async (req, res) => {
     res.status(500).send('Error interno del servidor al generar PDF');
   }
 };
-
