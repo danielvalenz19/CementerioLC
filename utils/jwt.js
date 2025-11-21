@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
 
 function signAccessToken(user) {
   const payload = {

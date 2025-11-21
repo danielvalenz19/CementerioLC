@@ -8,11 +8,21 @@ async function listar({ manzanaId, estado, q, page, pageSize }) {
   // 1. Armamos los filtros (WHERE)
   let whereClause = " WHERE 1=1";
 
-  // JOINs necesarios para filtrar por texto (q) si es necesario
+  // --- MEJORA CLAVE: JOINs INTELIGENTES ---
+  // Ahora unimos también con 'solicitudes_compra' para ver dueños por compra, no solo por alquiler.
   let joins = `
     JOIN manzanas m ON m.id = n.manzana_id
-    LEFT JOIN arrendamientos a ON a.nicho_id = n.id AND (a.fecha_fin IS NULL OR a.fecha_fin >= CURDATE())
-    LEFT JOIN propietarios p ON p.id = a.propietario_id
+    
+    -- 1. Buscamos Arrendamientos Activos (Inquilinos)
+    LEFT JOIN arrendamientos a ON a.nicho_id = n.id 
+         AND (a.fecha_fin IS NULL OR a.fecha_fin >= CURDATE())
+    LEFT JOIN propietarios p_arr ON p_arr.id = a.propietario_id
+
+    -- 2. Buscamos Solicitudes (Dueños por compra o Reservas)
+    -- Priorizamos las Aprobadas (Dueños) o Pendientes (Reservas)
+    LEFT JOIN solicitudes_compra s ON s.nicho_id = n.id 
+         AND s.estado IN ('Aprobada', 'Pendiente')
+    LEFT JOIN propietarios p_sol ON p_sol.id = s.propietario_id
   `;
 
   if (manzanaId) {
@@ -31,29 +41,30 @@ async function listar({ manzanaId, estado, q, page, pageSize }) {
       whereClause += " AND n.numero = ?";
       params.push(n);
     } else {
-      // Búsqueda por texto
+      // Búsqueda por texto ampliada a ambos tipos de propietarios
       whereClause += ` AND (
         m.nombre LIKE ? OR 
-        p.nombres LIKE ? OR 
-        p.apellidos LIKE ? OR 
+        p_arr.nombres LIKE ? OR p_arr.apellidos LIKE ? OR
+        p_sol.nombres LIKE ? OR p_sol.apellidos LIKE ? OR
         a.nombre_difunto LIKE ?
       )`;
       const likeQ = `%${q}%`;
-      params.push(likeQ, likeQ, likeQ, likeQ);
+      // Repetimos el parámetro para cada ?
+      params.push(likeQ, likeQ, likeQ, likeQ, likeQ, likeQ);
     }
   }
 
-  // 2. CONSULTA 1: CONTAR EL TOTAL REAL (Sin LIMIT)
-  // Clonamos params porque la ejecución consume el array en algunas versiones de drivers, 
-  // pero en mysql2 suele estar bien. Por seguridad usamos el mismo array.
+  // 2. CONSULTA 1: CONTAR EL TOTAL REAL
   const sqlCount = `SELECT COUNT(*) as total FROM nichos n ${joins} ${whereClause}`;
   const [rowsCount] = await pool.execute(sqlCount, params);
   const totalReal = rowsCount[0].total;
 
-  // 3. CONSULTA 2: TRAER LOS DATOS (Con LIMIT)
+  // 3. CONSULTA 2: TRAER LOS DATOS
   const limit = pageSize;
   const offset = (page - 1) * pageSize;
   
+  // Usamos COALESCE para elegir el nombre: 
+  // Si hay Arrendamiento (p_arr), mostramos ese. Si no, mostramos el de la Solicitud (p_sol).
   const sqlData = `
     SELECT
       n.id,
@@ -61,14 +72,23 @@ async function listar({ manzanaId, estado, q, page, pageSize }) {
       n.estado,
       n.manzana_id,
       m.nombre AS manzana,
+      
+      -- Datos de arrendamiento (si existe)
       a.id AS arrendamiento_id,
       a.fecha_inicio,
       a.fecha_fin,
       a.nombre_difunto,
-      p.id AS propietario_id,
-      p.nombres,
-      p.apellidos,
-      p.telefono
+      
+      -- Datos del Solicitud/Compra (si existe)
+      s.id AS solicitud_id,
+      s.estado AS solicitud_estado,
+
+      -- LÓGICA DEL PROPIETARIO (La Magia)
+      COALESCE(p_arr.id, p_sol.id) AS propietario_id,
+      COALESCE(p_arr.nombres, p_sol.nombres) AS nombres,
+      COALESCE(p_arr.apellidos, p_sol.apellidos) AS apellidos,
+      COALESCE(p_arr.telefono, p_sol.telefono) AS telefono
+
     FROM nichos n
     ${joins}
     ${whereClause}
@@ -78,10 +98,10 @@ async function listar({ manzanaId, estado, q, page, pageSize }) {
 
   const [rows] = await pool.execute(sqlData, params);
 
-  // Devolvemos el array de 20 filas Y el número total real (ej. 579)
   return { data: rows, total: totalReal };
 }
 
+// --- RESTO DE FUNCIONES (SE MANTIENEN IGUAL QUE ANTES) ---
 
 async function obtenerPorId(id) {
   const [rows] = await pool.execute(
@@ -136,7 +156,6 @@ async function crear({ numero, estado, manzana_id }) {
     estado,
     manzana_id,
   ]);
-
   const id = result.insertId;
   return obtenerPorId(id);
 }
@@ -144,7 +163,6 @@ async function crear({ numero, estado, manzana_id }) {
 async function actualizar(id, dto) {
   const sets = [];
   const params = [];
-
   if (dto.numero !== undefined) {
     sets.push("numero = ?");
     params.push(dto.numero);
@@ -163,7 +181,6 @@ async function actualizar(id, dto) {
   }
 
   params.push(id);
-
   const sql = `UPDATE nichos SET ${sets.join(", ")} WHERE id = ?`;
   const [result] = await pool.execute(sql, params);
   return result.affectedRows > 0;

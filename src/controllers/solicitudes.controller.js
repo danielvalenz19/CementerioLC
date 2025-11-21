@@ -92,19 +92,13 @@ exports.aprobar = async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!isPosInt(id)) {
-      return res.status(400).json({ message: "ID inválido" });
+      return res.status(400).json({ message: "ID de solicitud inválido" });
     }
 
-    const recibo_id = req.body.recibo_id !== undefined ? Number(req.body.recibo_id) : undefined;
+    const numero_recibo = req.body.numero_recibo ? String(req.body.numero_recibo).trim() : null;
 
-    if (recibo_id !== undefined && !isPosInt(recibo_id)) {
-      return res.status(400).json({
-        message: "recibo_id debe ser entero positivo si se envía.",
-      });
-    }
-
-    const result = await service.aprobar(id, { recibo_id });
-
+    const result = await service.aprobar(id, { numero_recibo });
+    
     if (result.notFound) {
       return res.status(404).json({ message: "Solicitud no encontrada" });
     }
@@ -113,6 +107,9 @@ exports.aprobar = async (req, res) => {
   } catch (err) {
     if (err.code === "BAD_STATE") {
       return res.status(400).json({ message: err.message });
+    }
+    if (err.message === "RECIBO_NOT_FOUND") {
+      return res.status(404).json({ message: "No existe un recibo con ese número. Regístralo primero en Recibos." });
     }
     return res.status(500).json({
       message: "Error al aprobar solicitud",

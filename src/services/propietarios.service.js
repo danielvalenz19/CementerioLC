@@ -14,13 +14,14 @@ async function listar({ q }) {
   const params = [];
 
   if (q) {
+    // Usamos CONCAT para encontrar coincidencias aunque busquen nombre y apellido juntos
     sql += ` AND (
-      nombres LIKE ? OR
-      apellidos LIKE ? OR
+      CONCAT(nombres, ' ', apellidos) LIKE ? OR
       dpi LIKE ? OR
       telefono LIKE ?
     )`;
-    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+    const likeQ = `%${q}%`;
+    params.push(likeQ, likeQ, likeQ);
   }
 
   sql += " ORDER BY apellidos, nombres";
