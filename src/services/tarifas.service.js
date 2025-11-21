@@ -42,4 +42,9 @@ async function actualizar(id, dto) {
   return res.affectedRows > 0;
 }
 
-module.exports = { listar, crear, actualizar };
+async function eliminar(id) {
+  const [result] = await pool.execute("DELETE FROM tarifas WHERE id = ?", [id]);
+  return result.affectedRows > 0;
+}
+
+module.exports = { listar, crear, actualizar, eliminar };

@@ -26,4 +26,12 @@ router.put("/:id", (req, res, next) => {
   return ctrl.actualizar(req, res, next);
 });
 
+router.delete("/:id", (req, res, next) => {
+  /*
+    #swagger.tags = ['Tarifas']
+    #swagger.summary = 'Eliminar tarifa'
+  */
+  return ctrl.eliminar(req, res, next);
+});
+
 module.exports = router;

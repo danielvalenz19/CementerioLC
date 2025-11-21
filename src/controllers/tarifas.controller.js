@@ -29,3 +29,18 @@ exports.actualizar = async (req, res) => {
     return res.status(500).json({ message: "Error al actualizar tarifa", error: err.message });
   }
 };
+
+exports.eliminar = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const ok = await service.eliminar(id);
+    if (!ok) return res.status(404).json({ message: "Tarifa no encontrada" });
+
+    return res.status(204).end();
+  } catch (err) {
+    if (err.code === "ER_ROW_IS_REFERENCED_2" || err.errno === 1451) {
+      return res.status(409).json({ message: "No se puede eliminar: Esta tarifa ya se ha utilizado en recibos." });
+    }
+    return res.status(500).json({ message: "Error al eliminar tarifa", error: err.message });
+  }
+};
